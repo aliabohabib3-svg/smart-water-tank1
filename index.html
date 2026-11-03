@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Water Tank System</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f1f5f9;
+      color: #172033;
+      line-height: 1.6;
+    }
+
+    header {
+      background: linear-gradient(135deg, #075985, #0284c7);
+      color: white;
+      text-align: center;
+      padding: 30px 16px;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+    }
+
+    header p {
+      margin: 0;
+      opacity: 0.95;
+    }
+
+    main {
+      width: min(1100px, 94%);
+      margin: 24px auto 40px;
+    }
+
+    .card {
+      background: white;
+      padding: 22px;
+      margin-bottom: 22px;
+      border-radius: 14px;
+      box-shadow: 0 4px 18px rgba(15, 23, 42, 0.07);
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #075985;
+      font-size: 22px;
+    }
+
+    .inputs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .field label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    .field input:focus {
+      outline: 2px solid #7dd3fc;
+      border-color: #0284c7;
+    }
+
+    .hint {
+      color: #64748b;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      margin-top: 20px;
+      padding: 13px;
+      background: #0284c7;
+      color: white;
+      border: none;
+      border-radius: 9px;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0369a1;
+    }
+
+    .error {
+      display: none;
+      margin-top: 14px;
+      color: #b91c1c;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    .results {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .result-box {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 10px;
+      padding: 15px;
+    }
+
+    .result-box .label {
+      font-size: 14px;
+      color: #475569;
+    }
+
+    .result-box .value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #075985;
+      overflow-wrap: anywhere;
+    }
+
+    .status {
+      padding: 12px;
+      margin-top: 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status.warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status.danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .tank-layout {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      flex-wrap: wrap;
+      padding: 10px 0 18px;
+    }
+
+    .tank {
+      position: relative;
+      width: 170px;
+      height: 250px;
+      border: 5px solid #475569;
+      border-top: 8px solid #475569;
+      border-radius: 12px 12px 20px 20px;
+      overflow: hidden;
+      background: #f8fafc;
+    }
+
+    .water {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 40%;
+      background: linear-gradient(180deg, #38bdf8, #0284c7);
+      transition: height 0.5s ease;
+    }
+
+    .water::before {
+      content: "";
+      position: absolute;
+      top: -5px;
+      left: -10%;
+      width: 120%;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.35);
+      border-radius: 50%;
+    }
+
+    .tank-label {
+      text-align: center;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    .tank-info {
+      max-width: 300px;
+      color: #475569;
+    }
+
+    .equation {
+      background: #f8fafc;
+      padding: 14px;
+      border-radius: 8px;
+      overflow-wrap: anywhere;
+    }
+
+    .chart-wrap {
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    #chart {
+      display: block;
+      width: 100%;
+      min-width: 320px;
+      height: 360px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: white;
+    }
+
+    .chart-note {
+      color: #64748b;
+      font-size: 14px;
+      margin-bottom: 0;
+    }
+
+    footer {
+      text-align: center;
+      padding: 18px;
+      color: #64748b;
+      font-size: 13px;
+    }
+
+
+
+    /* Automatic Pump Control */
+    .pump-panel {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 12px;
+      padding: 18px;
+      margin-top: 18px;
+    }
+
+    .pump-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .pump-tile {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .pump-tile .label {
+      color: #64748b;
+      font-size: 13px;
+    }
+
+    .pump-tile .value {
+      font-size: 21px;
+      font-weight: bold;
+      color: #075985;
+    }
+
+    #pumpStatus.pump-on { color: #15803d; }
+    #pumpStatus.pump-off { color: #b91c1c; }
+
+    #pumpMessage {
+      margin: 10px 0 0;
+      padding: 11px;
+      border-radius: 8px;
+      background: white;
+      font-weight: bold;
+    }
+
+    .pump-note {
+      color: #475569;
+      font-size: 13px;
+      margin-bottom: 0;
+    }
+
+    .live-controls {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .live-controls button {
+      margin-top: 0;
+      padding: 11px 8px;
+      font-size: 14px;
+    }
+    .live-controls button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .live-clock {
+      text-align: center;
+      color: #475569;
+      margin-bottom: 4px;
+    }
+    @media (max-width: 650px) {
+      .live-controls { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 650px) {
+      .pump-grid { grid-template-columns: 1fr; }
+    }
+
+    .live-controls {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .live-controls button {
+      margin-top: 0;
+      padding: 11px 8px;
+      font-size: 14px;
+    }
+    .live-controls button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .live-clock {
+      text-align: center;
+      color: #475569;
+      margin-bottom: 4px;
+    }
+    @media (max-width: 650px) {
+      .live-controls { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 650px) {
+      .inputs {
+        grid-template-columns: 1fr;
+      }
+
+      .results {
+        grid-template-columns: 1fr;
+      }
+
+      header h1 {
+        font-size: 24px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Smart Water Tank System</h1>
+    <p>A Mathematics 1 Application Using Rates and Functions</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>1. Tank Settings</h2>
+
+      <div class="inputs">
+        <div class="field">
+          <label for="capacity">Tank Capacity (liters)</label>
+          <input id="capacity" type="number" min="1" step="any" value="1000">
+        </div>
+
+        <div class="field">
+          <label for="initial">Initial Water Volume (liters)</label>
+          <input id="initial" type="number" min="0" step="any" value="400">
+        </div>
+
+        <div class="field">
+          <label for="inflow">Pump Inflow Rate (liters/minute)</label>
+          <input id="inflow" type="number" min="0" step="any" value="50">
+        </div>
+
+        <div class="field">
+          <label for="outflow">Outflow Rate (liters/minute)</label>
+          <input id="outflow" type="number" min="0" step="any" value="10">
+        </div>
+
+        <div class="field">
+          <label for="time">Simulation Time (minutes)</label>
+          <input id="time" type="number" min="0" step="any" value="40">
+          <div class="hint">Choose how many minutes to simulate. In automatic mode, this is the pump flow rate while the pump is ON.</div>
+        </div>
+      </div>
+
+      <button id="simulateButton" type="button">Run Simulation</button>
+      <div id="error" class="error" role="alert"></div>
+    </section>
+
+    <section class="card">
+      <h2>2. Tank Visualization</h2>
+
+      <div class="tank-layout">
+        <div>
+          <div class="tank">
+            <div id="water" class="water"></div>
+          </div>
+          <div class="tank-label">Water Tank</div>
+          <button id="testAlarm" type="button">Test Alarm</button>
+        </div>
+
+        <div class="tank-info">
+          <p>The blue area represents the water currently inside the tank.</p>
+          <p>Its height changes according to the calculated water volume.</p>
+          <p><strong>Current level:</strong> <span id="tankPercent">40%</span></p>
+        </div>
+      </div>
+    </section>
+
+
+
+    <section class="card">
+      <h2>3. Automatic Pump Control</h2>
+      <p>The virtual pump turns ON when the tank reaches 20% or less, and turns OFF when it reaches 90% or more.</p>
+      <div class="pump-panel">
+        <div class="pump-grid">
+          <div class="pump-tile">
+            <div class="label">Pump Mode</div>
+            <div class="value">AUTOMATIC</div>
+          </div>
+          <div class="pump-tile">
+            <div class="label">Pump Status</div>
+            <div class="value" id="pumpStatus">OFF</div>
+          </div>
+          <div class="pump-tile">
+            <div class="label">Pump Switching Events</div>
+            <div class="value" id="pumpTransitions">0</div>
+          </div>
+        </div>
+        <p id="pumpMessage" aria-live="polite">Press Start Live Simulation to watch the pump work.</p>
+        <div class="live-controls">
+          <button id="startLiveButton" type="button">Start Live Simulation</button>
+          <button id="pauseLiveButton" type="button" disabled>Pause</button>
+          <button id="resetLiveButton" type="button">Reset</button>
+        </div>
+        <p class="live-clock">Simulation time: <strong id="liveTime">0.00</strong> / <span id="liveDuration">5</span> minutes</p>
+        <p class="pump-note">ON threshold: 20% or less | OFF threshold: 90% or more. Between these levels, the pump keeps its previous state (hysteresis). Live speed: 1 simulated minute per 1 real second.</p>
+      </div>
+      <p class="hint">This is a software simulation only. It does not control a physical pump.</p>
+    </section>
+
+    <section class="card">
+      <h2>4. Simulation Results</h2>
+
+      <div class="results">
+        <div class="result-box">
+          <div class="label">Final Water Volume</div>
+          <div class="value" id="finalVolume">600 L</div>
+        </div>
+
+        <div class="result-box">
+          <div class="label">Tank Fill Percentage</div>
+          <div class="value" id="percentage">60%</div>
+        </div>
+
+        <div class="result-box">
+          <div class="label">Net Flow Rate</div>
+          <div class="value" id="netRate">40 L/min</div>
+        </div>
+      </div>
+
+      <div id="status" class="status">NORMAL</div>
+
+      <p><strong>Time estimate:</strong> <span id="timeEstimate">The tank is filling.</span></p>
+
+      <div class="equation">
+        <strong>Mathematical Model</strong>
+        <p id="equation">V(t) = 400 + (50 - 10) × t</p>
+        <p>
+          General formula:
+          <strong>V(t) = V₀ + (Inflow − Outflow) × t</strong>
+        </p>
+        <p class="hint">
+          The actual water volume cannot go below 0 or above the tank capacity.
+        </p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>5. Water Volume vs Time Graph</h2>
+      <div class="chart-wrap">
+        <canvas id="chart" width="800" height="360">
+          Your browser does not support the canvas element.
+        </canvas>
+      </div>
+      <p class="chart-note">
+        Horizontal axis: Time (minutes) | Vertical axis: Water Volume (liters).
+        The blue curve shows how the water volume changes over time.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    Smart Water Tank System | Mathematics 1 Project
+  </footer>
+
+  <script>
+    const capacityInput = document.getElementById("capacity");
+    const initialInput = document.getElementById("initial");
+    const inflowInput = document.getElementById("inflow");
+    const outflowInput = document.getElementById("outflow");
+    const timeInput = document.getElementById("time");
+
+    const waterElement = document.getElementById("water");
+    const tankPercentElement = document.getElementById("tankPercent");
+    const finalVolumeElement = document.getElementById("finalVolume");
+    const percentageElement = document.getElementById("percentage");
+    const netRateElement = document.getElementById("netRate");
+    const statusElement = document.getElementById("status");
+    const timeEstimateElement = document.getElementById("timeEstimate");
+    const equationElement = document.getElementById("equation");
+    const errorElement = document.getElementById("error");
+    const chartCanvas = document.getElementById("chart");
+    const pumpStatusElement = document.getElementById("pumpStatus");
+    const pumpMessageElement = document.getElementById("pumpMessage");
+    const pumpTransitionsElement = document.getElementById("pumpTransitions");
+
+    function formatNumber(number) {
+      return Number(number.toFixed(2)).toLocaleString("en-US", {
+        maximumFractionDigits: 2
+      });
+    }
+
+    function volumeAt(t, initial, netRate, capacity) {
+      return Math.max(
+        0,
+        Math.min(capacity, initial + netRate * t)
+      );
+    }
+
+    function drawChart(capacity, samples, time) {
+      const canvas = chartCanvas;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      const width = canvas.width;
+      const height = canvas.height;
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+
+      const margin = { left: 75, right: 25, top: 25, bottom: 60 };
+      const plotWidth = width - margin.left - margin.right;
+      const plotHeight = height - margin.top - margin.bottom;
+      const maxTime = Math.max(time, 1);
+      const x = t => margin.left + (t / maxTime) * plotWidth;
+      const y = v => margin.top + plotHeight - (v / capacity) * plotHeight;
+
+      ctx.strokeStyle = "#e2e8f0";
+      ctx.lineWidth = 1;
+      ctx.fillStyle = "#475569";
+      ctx.font = "12px Arial";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+
+      for (let i = 0; i <= 5; i++) {
+        const value = (capacity / 5) * i;
+        const py = y(value);
+        ctx.beginPath();
+        ctx.moveTo(margin.left, py);
+        ctx.lineTo(width - margin.right, py);
+        ctx.stroke();
+        ctx.fillText(formatNumber(value), margin.left - 10, py);
+      }
+
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      for (let i = 0; i <= 5; i++) {
+        const value = (maxTime / 5) * i;
+        const px = x(value);
+        ctx.beginPath();
+        ctx.moveTo(px, margin.top);
+        ctx.lineTo(px, height - margin.bottom);
+        ctx.stroke();
+        ctx.fillText(formatNumber(value), px, height - margin.bottom + 10);
+      }
+
+      ctx.strokeStyle = "#334155";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(margin.left, margin.top);
+      ctx.lineTo(margin.left, height - margin.bottom);
+      ctx.lineTo(width - margin.right, height - margin.bottom);
+      ctx.stroke();
+
+      ctx.fillStyle = "#172033";
+      ctx.font = "bold 14px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText("Time (minutes)", margin.left + plotWidth / 2, height - 12);
+      ctx.save();
+      ctx.translate(20, margin.top + plotHeight / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText("Water Volume (liters)", 0, 0);
+      ctx.restore();
+
+      // Automatic control thresholds: 20% (pump ON) and 90% (pump OFF).
+      ctx.save();
+      ctx.setLineDash([6, 5]);
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "#d97706";
+      ctx.beginPath();
+      ctx.moveTo(margin.left, y(capacity * 0.2));
+      ctx.lineTo(width - margin.right, y(capacity * 0.2));
+      ctx.stroke();
+      ctx.strokeStyle = "#16a34a";
+      ctx.beginPath();
+      ctx.moveTo(margin.left, y(capacity * 0.9));
+      ctx.lineTo(width - margin.right, y(capacity * 0.9));
+      ctx.stroke();
+      ctx.restore();
+
+      // Draw the actual simulated volume points.
+      if (samples.length) {
+        ctx.strokeStyle = "#0284c7";
+        ctx.lineWidth = 3;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        samples.forEach((point, index) => {
+          if (index === 0) ctx.moveTo(x(point.time), y(point.volume));
+          else ctx.lineTo(x(point.time), y(point.volume));
+        });
+        ctx.stroke();
+
+        const last = samples[samples.length - 1];
+        ctx.fillStyle = "#0369a1";
+        ctx.beginPath();
+        ctx.arc(x(last.time), y(last.volume), 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Legend.
+      ctx.font = "11px Arial";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#0284c7";
+      ctx.fillRect(width - 205, 8, 16, 4);
+      ctx.fillStyle = "#334155";
+      ctx.fillText("Water volume", width - 184, 10);
+      ctx.fillStyle = "#d97706";
+      ctx.fillText("20% ON", width - 115, 28);
+      ctx.fillStyle = "#16a34a";
+      ctx.fillText("90% OFF", width - 55, 28);
+    }
+
+    function playAlarm() {
+  const audio = new AudioContext();
+  const oscillator = audio.createOscillator();
+  const gain = audio.createGain();
+
+  oscillator.type = "sine";
+  oscillator.frequency.value = 880;
+  gain.gain.value = 0.15;
+
+  oscillator.connect(gain);
+  gain.connect(audio.destination);
+
+  oscillator.start();
+  oscillator.stop(audio.currentTime + 0.5);
+
+  oscillator.onended = () => audio.close();
+}
+    let liveAnimationId = null;
+    let liveRunning = false;
+    let liveLastTimestamp = null;
+    let liveElapsed = 0;
+    let liveVolume = 0;
+    let livePumpOn = false;
+    let liveTransitions = 0;
+    let liveSamples = [];
+    let liveSettings = null;
+    let lastChartUpdate = 0;
+
+    const liveTimeElement = document.getElementById("liveTime");
+    const liveDurationElement = document.getElementById("liveDuration");
+    const startLiveButton = document.getElementById("startLiveButton");
+    const pauseLiveButton = document.getElementById("pauseLiveButton");
+    const resetLiveButton = document.getElementById("resetLiveButton");
+
+    function readLiveSettings() {
+      const settings = {
+        capacity: Number(capacityInput.value),
+        initial: Number(initialInput.value),
+        inflow: Number(inflowInput.value),
+        outflow: Number(outflowInput.value),
+        time: Number(timeInput.value)
+      };
+      const values = Object.values(settings);
+      errorElement.style.display = "none";
+      errorElement.textContent = "";
+      if (values.some(value => !Number.isFinite(value))) {
+        errorElement.textContent = "Please enter a valid number in every field.";
+      } else if (settings.capacity <= 0) {
+        errorElement.textContent = "Tank capacity must be greater than zero.";
+      } else if (settings.initial < 0 || settings.initial > settings.capacity) {
+        errorElement.textContent = "Initial water volume must be between 0 and tank capacity.";
+      } else if (settings.inflow < 0 || settings.outflow < 0 || settings.time <= 0) {
+        errorElement.textContent = "Rates cannot be negative and simulation time must be greater than zero.";
+      }
+      if (errorElement.textContent) {
+        errorElement.style.display = "block";
+        return null;
+      }
+      return settings;
+    }
+
+    function updateLiveDisplay() {
+      const { capacity, inflow, outflow, time } = liveSettings;
+      const percentage = (liveVolume / capacity) * 100;
+      const actualInflow = livePumpOn ? inflow : 0;
+      const netRate = actualInflow - outflow;
+
+      finalVolumeElement.textContent = formatNumber(liveVolume) + " L";
+      percentageElement.textContent = formatNumber(percentage) + "%";
+      netRateElement.textContent = formatNumber(netRate) + " L/min";
+      tankPercentElement.textContent = formatNumber(percentage) + "%";
+      waterElement.style.height = percentage + "%";
+      pumpStatusElement.textContent = livePumpOn ? "ON" : "OFF";
+      pumpStatusElement.className = livePumpOn ? "value pump-on" : "value pump-off";
+      pumpTransitionsElement.textContent = String(liveTransitions);
+      liveTimeElement.textContent = formatNumber(liveElapsed);
+      liveDurationElement.textContent = formatNumber(time);
+
+      pumpMessageElement.textContent = livePumpOn
+        ? "PUMP ON — adding " + formatNumber(inflow) + " L/min."
+        : "PUMP OFF — no pumping; outflow continues at " + formatNumber(outflow) + " L/min.";
+
+      let status = "NORMAL";
+      statusElement.className = "status";
+      if (liveVolume <= 0) {
+        status = "EMPTY - NO WATER LEFT";
+        statusElement.classList.add("danger");
+      } else if (liveVolume >= capacity) {
+        status = "FULL - TANK CAPACITY REACHED";
+        statusElement.classList.add("warning");
+      } else if (percentage <= 20) {
+        status = "LOW WATER WARNING - AUTOMATIC PUMP ON";
+        statusElement.classList.add("warning");
+      } else if (percentage >= 90) {
+        status = "ALMOST FULL - AUTOMATIC PUMP OFF";
+        statusElement.classList.add("warning");
+      }
+      statusElement.textContent = status;
+
+      equationElement.textContent =
+        "Live automatic model: while Pump ON, dV/dt = " + formatNumber(inflow) + " - " + formatNumber(outflow) +
+        " = " + formatNumber(inflow - outflow) + " L/min; while Pump OFF, dV/dt = -" +
+        formatNumber(outflow) + " L/min. Pump ON threshold = 20%; OFF threshold = 90%.";
+
+      if (liveRunning) {
+        timeEstimateElement.textContent = "Live simulation is running. The display updates as the tank fills or drains.";
+      } else if (liveElapsed >= time) {
+        timeEstimateElement.textContent = "Simulation completed. Final simulated time: " + formatNumber(liveElapsed) + " minutes.";
+      } else {
+        timeEstimateElement.textContent = "Simulation paused at " + formatNumber(liveElapsed) + " minutes.";
+      }
+    }
+
+    function finishLiveSimulation() {
+      liveRunning = false;
+      liveLastTimestamp = null;
+      if (liveAnimationId !== null) cancelAnimationFrame(liveAnimationId);
+      liveAnimationId = null;
+      startLiveButton.disabled = true;
+      pauseLiveButton.disabled = true;
+      pumpMessageElement.textContent = "Simulation completed — " + (livePumpOn ? "pump is ON" : "pump is OFF") + ".";
+      updateLiveDisplay();
+    }
+
+    function liveFrame(timestamp) {
+      if (!liveRunning) return;
+      if (liveLastTimestamp === null) liveLastTimestamp = timestamp;
+      const realSeconds = Math.min((timestamp - liveLastTimestamp) / 1000, 0.1);
+      liveLastTimestamp = timestamp;
+      const dt = realSeconds; // 1 real second = 1 simulated minute
+      const { capacity, inflow, outflow, time } = liveSettings;
+      const previousPump = livePumpOn;
+      const currentPercentage = (liveVolume / capacity) * 100;
+      if (currentPercentage <= 20) livePumpOn = true;
+      else if (currentPercentage >= 90) livePumpOn = false;
+      if (livePumpOn !== previousPump) liveTransitions++;
+
+      const netRate = (livePumpOn ? inflow : 0) - outflow;
+      liveVolume = Math.max(0, Math.min(capacity, liveVolume + netRate * dt));
+      liveElapsed = Math.min(time, liveElapsed + dt);
+      liveSamples.push({ time: liveElapsed, volume: liveVolume, pump: livePumpOn ? "ON" : "OFF" });
+
+      updateLiveDisplay();
+      if (timestamp - lastChartUpdate > 100 || liveElapsed >= time) {
+        drawChart(capacity, liveSamples, time);
+        lastChartUpdate = timestamp;
+      }
+
+      if (liveElapsed >= time) {
+        finishLiveSimulation();
+        drawChart(capacity, liveSamples, time);
+        return;
+      }
+      liveAnimationId = requestAnimationFrame(liveFrame);
+    }
+
+    function startLiveSimulation() {
+      if (liveRunning) return;
+      if (!liveSettings || liveElapsed === 0) {
+        liveSettings = readLiveSettings();
+        if (!liveSettings) return;
+        liveVolume = liveSettings.initial;
+        liveElapsed = 0;
+        livePumpOn = (liveVolume / liveSettings.capacity) <= 0.20;
+        liveTransitions = 0;
+        liveSamples = [{ time: 0, volume: liveVolume, pump: livePumpOn ? "ON" : "OFF" }];
+        drawChart(liveSettings.capacity, liveSamples, liveSettings.time);
+      }
+      if (liveElapsed >= liveSettings.time) return;
+      liveRunning = true;
+      liveLastTimestamp = null;
+      startLiveButton.disabled = true;
+      pauseLiveButton.disabled = false;
+      updateLiveDisplay();
+      liveAnimationId = requestAnimationFrame(liveFrame);
+    }
+
+    function pauseLiveSimulation() {
+      if (!liveRunning) return;
+      liveRunning = false;
+      if (liveAnimationId !== null) cancelAnimationFrame(liveAnimationId);
+      liveAnimationId = null;
+      startLiveButton.disabled = false;
+      pauseLiveButton.disabled = true;
+      updateLiveDisplay();
+    }
+
+    function resetLiveSimulation() {
+      pauseLiveSimulation();
+      liveSettings = readLiveSettings();
+      if (!liveSettings) return;
+      liveVolume = liveSettings.initial;
+      liveElapsed = 0;
+      livePumpOn = (liveVolume / liveSettings.capacity) <= 0.20;
+      liveTransitions = 0;
+      liveSamples = [{ time: 0, volume: liveVolume, pump: livePumpOn ? "ON" : "OFF" }];
+      startLiveButton.disabled = false;
+      pauseLiveButton.disabled = true;
+      pumpMessageElement.textContent = "Ready. Press Start Live Simulation.";
+      updateLiveDisplay();
+      drawChart(liveSettings.capacity, liveSamples, liveSettings.time);
+    }
+
+    function simulate(userInitiated = false) {
+      // The original Run Simulation button now starts the live animation.
+      if (liveRunning) pauseLiveSimulation();
+      liveSettings = null;
+      liveElapsed = 0;
+      startLiveSimulation();
+    }
+
+    startLiveButton.addEventListener("click", startLiveSimulation);
+    pauseLiveButton.addEventListener("click", pauseLiveSimulation);
+    resetLiveButton.addEventListener("click", resetLiveSimulation);
+    document.getElementById("testAlarm").addEventListener("click", playAlarm);
+    document.getElementById("simulateButton").addEventListener("click", simulate);
+
+    // Prepare the display when the page opens; the live animation starts only after a button click.
+    resetLiveSimulation();
+    document.getElementById("testAlarm").addEventListener("click", playAlarm);
+    document
+      .getElementById("simulateButton")
+      .addEventListener("click", () => simulate(true));
+
+    // Display initial results and graph when the page opens.
+    simulate(false);
+  </script>
+</body>
+</html>
